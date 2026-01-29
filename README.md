@@ -1,54 +1,74 @@
-# Task Manager Simple - Versión JavaScript
+# Task Manager - Migración a React (Next.js) + Express + MongoDB Atlas
 
-Sistema de gestión de tareas simplificado en JavaScript plano, HTML básico y CSS mínimo. Usa localStorage como base de datos, sin necesidad de servidor ni configuración.
+Este repo contiene:
 
-## Características
+- **Legacy**: `index.html` + `style.css` + `app.js` (sin servidor, usa `localStorage`)
+- **Nuevo**: **Next.js (React)** en `client/` + **Express (Node)** en `server/` + **MongoDB Atlas**
 
-- **Sin dependencias**: Solo HTML, CSS y JavaScript puro
-- **Sin servidor**: Funciona completamente en el navegador
-- **Almacenamiento local**: Usa localStorage del navegador
-- **Apariencia antigua**: Diseño minimalista estilo legacy
-- **Funcionalidades completas**: Todas las características del sistema original
+## Qué se migró
 
-## Funcionalidades
+- **Login** (JWT)
+- **CRUD de Tareas**
+- **CRUD de Proyectos**
+- **Comentarios** por tarea
+- **Historial / auditoría**
+- **Notificaciones** (pendientes y “marcar leídas”)
+- **Búsqueda** (filtros)
+- **Reportes**
+- **Export CSV**
 
-1. **Autenticación**: Login básico con múltiples usuarios
-2. **CRUD de Tareas**: Crear, leer, actualizar y eliminar tareas
-3. **CRUD de Proyectos**: Gestión de proyectos
-4. **Sistema de Comentarios**: Comentarios en tareas
-5. **Historial y Auditoría**: Registro de cambios
-6. **Notificaciones**: Sistema de notificaciones por usuario
-7. **Búsqueda Avanzada**: Búsqueda con múltiples filtros
-8. **Generación de Reportes**: Reportes de tareas, proyectos y usuarios
-9. **Exportación CSV**: Exportar datos a CSV
+> Nota: La UI nueva usa el mismo “ID numérico” visible (por compatibilidad con el legacy), pero en Mongo se guarda también el `_id` real.
 
-## Uso
+## Requisitos
 
-1. Abre `index.html` en cualquier navegador moderno
-2. Usa las credenciales por defecto:
-   - Usuario: `admin`
-   - Contraseña: `admin`
-3. Explora las diferentes pestañas para usar las funcionalidades
+- Node.js 18+
+- Una base en MongoDB Atlas (connection string)
 
-## Estructura
+## Configurar MongoDB Atlas (backend)
 
-```
-TaskManagerSimple/
-├── index.html    # Interfaz HTML básica
-├── style.css     # Estilos CSS mínimos (apariencia antigua)
-├── app.js        # Lógica JavaScript con localStorage
-└── README.md     # Este archivo
+En `server/`, crea un archivo `.env` (manual) con:
+
+```env
+MONGODB_URI=TU_CONNECTION_STRING_DE_ATLAS
+JWT_SECRET=una_clave_segura
+PORT=5000
+CORS_ORIGIN=http://localhost:3000
 ```
 
-## Datos por Defecto
+Referencia: `server/env.example`
 
-El sistema se inicializa con:
-- **Usuarios**: admin/admin, user1/user1, user2/user2
-- **Proyectos**: Proyecto Demo, Proyecto Alpha, Proyecto Beta
+## Correr backend (Express)
 
-## Notas
+```bash
+cd server
+npm install
+npm run dev
+```
 
-- Todos los datos se guardan en localStorage del navegador
-- Los datos persisten entre sesiones
-- Para limpiar los datos, usa la consola del navegador: `localStorage.clear()`
-- Compatible con cualquier navegador moderno (Chrome, Firefox, Safari, Edge)
+API health check: `GET /api/health`
+
+## Configurar frontend (Next.js)
+
+Opcional: crea `client/.env.local` (manual) si tu API no está en `http://localhost:5000`:
+
+```env
+NEXT_PUBLIC_API_BASE_URL=http://localhost:5000
+```
+
+Referencia: `client/env.example`
+
+## Correr frontend (Next.js)
+
+```bash
+cd client
+npm install
+npm run dev
+```
+
+Abre `http://localhost:3000`
+
+## Credenciales por defecto
+
+- Usuario: `admin`
+- Contraseña: `admin`
+

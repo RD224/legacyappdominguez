@@ -6,7 +6,8 @@ const Storage = {
             localStorage.setItem('users', JSON.stringify([
                 { id: 1, username: 'admin', password: 'admin' },
                 { id: 2, username: 'user1', password: 'user1' },
-                { id: 3, username: 'user2', password: 'user2' }
+                { id: 3, username: 'andu', password: '1' },
+                { id: 4, username: 'Rohan', password: 'Arroz' }
             ]));
         }
         if (!localStorage.getItem('projects')) {
