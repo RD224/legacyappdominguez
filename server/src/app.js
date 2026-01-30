@@ -15,9 +15,13 @@ const exportRoutes = require('./routes/export');
 function createApp() {
   const app = express();
 
+  const rawOrigin = process.env.CORS_ORIGIN;
+  const corsOrigin =
+    typeof rawOrigin === 'string' ? rawOrigin.replace(/\/$/, '') : rawOrigin;
+
   app.use(
     cors({
-      origin: process.env.CORS_ORIGIN || true,
+      origin: corsOrigin || true,
       credentials: true
     })
   );
