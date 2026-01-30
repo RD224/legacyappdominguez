@@ -4,7 +4,7 @@
   "description": "Raíz: build unificado (client + server) para Render",
   "scripts": {
     "install": "cd server && npm install",
-    "build": "cd client && npm install && npm run build && cd ../server && npm install",
+    "build": "cd client && npm install --include=dev && npm run build && cd ../server && npm install",
     "build:server-only": "cd server && npm install",
     "start": "cd server && node src/index.js"
   }
