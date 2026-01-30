@@ -97,6 +97,17 @@ npm run dev
 
 Abre `http://localhost:3000`
 
+## Desplegar frontend en Vercel
+
+El proyecto ya incluye `client/vercel.json` con la URL del backend en Render.
+
+1. Entra a [vercel.com](https://vercel.com) e inicia sesión con GitHub.
+2. **Add New** → **Project** → importa el repo **legacyappdominguez**.
+3. En **Root Directory** haz clic en **Edit** y pon: **`client`**.
+4. La variable `NEXT_PUBLIC_API_BASE_URL` está en `client/vercel.json`; si tu API está en otra URL, añádela en **Environment Variables**.
+5. **Deploy**. Vercel te dará una URL (ej. `https://legacyappdominguez.vercel.app`).
+6. En **Render** (backend): Environment → añade **CORS_ORIGIN** = la URL de Vercel (ej. `https://legacyappdominguez.vercel.app`) → Manual Deploy.
+
 ## Credenciales por defecto
 
 - Usuario: `admin`
