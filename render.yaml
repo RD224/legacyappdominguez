@@ -1,0 +1,18 @@
+# Render Blueprint: backend (Node.js + Express)
+# https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: legacyapp-server
+    runtime: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        sync: false
