@@ -1,9 +1,15 @@
-# Task Manager - Migración a React (Next.js) + Express + MongoDB Atlas
+# Task Manager - React + Node.js/Express + MongoDB Atlas
 
-Este repo contiene:
+App de gestión de tareas migrada desde la versión estática (legacy) a una arquitectura full-stack:
 
-- **Legacy**: `index.html` + `style.css` + `app.js` (sin servidor, usa `localStorage`)
-- **Nuevo**: **Next.js (React)** en `client/` + **Express (Node)** en `server/` + **MongoDB Atlas**
+| Capa        | Tecnología              | Ubicación   |
+|------------|--------------------------|-------------|
+| **Frontend** | React (Next.js)         | `client/`   |
+| **Backend**  | Node.js + Express.js   | `server/`   |
+| **Base de datos** | MongoDB Atlas      | URI en `.env` |
+
+- **Legacy** (referencia): `index.html` + `style.css` + `app.js` (sin servidor, usa `localStorage`)
+- **Nueva app**: React en `client/` + Express en `server/` + MongoDB Atlas
 
 ## Qué se migró
 
@@ -19,6 +25,29 @@ Este repo contiene:
 
 > Nota: La UI nueva usa el mismo “ID numérico” visible (por compatibilidad con el legacy), pero en Mongo se guarda también el `_id` real.
 
+## Estructura del proyecto
+
+```
+legacyappdominguez/
+├── client/                 # Frontend React (Next.js)
+│   ├── src/app/             # Páginas y layout
+│   └── src/lib/api.js       # Cliente API (login, fetch, export)
+├── server/                  # Backend Node.js + Express
+│   ├── src/
+│   │   ├── index.js        # Entrada, conexión DB y arranque
+│   │   ├── app.js          # Express, CORS, rutas
+│   │   ├── db.js           # Conexión MongoDB (MONGODB_URI)
+│   │   ├── seed.js         # Datos iniciales (usuarios, proyectos)
+│   │   ├── models/         # Mongoose: User, Task, Project, Comment, History, Notification
+│   │   ├── routes/         # API: auth, users, projects, tasks, history, notifications, reports, export
+│   │   └── middleware/     # authRequired (JWT)
+│   └── .env                # MONGODB_URI, JWT_SECRET, PORT, CORS_ORIGIN (crear desde env.example)
+├── index.html, app.js, style.css   # App legacy (referencia)
+└── README.md
+```
+
+Cuando tengas el **URI de MongoDB Atlas**, créalo en [Atlas](https://cloud.mongodb.com), copia el connection string y pégalo en `server/.env` como `MONGODB_URI=...`.
+
 ## Requisitos
 
 - Node.js 18+
@@ -26,16 +55,17 @@ Este repo contiene:
 
 ## Configurar MongoDB Atlas (backend)
 
-En `server/`, crea un archivo `.env` (manual) con:
+1. Copia `server/env.example` a `server/.env`.
+2. En `server/.env` pega tu **Connection String** de MongoDB Atlas en `MONGODB_URI`:
 
 ```env
-MONGODB_URI=TU_CONNECTION_STRING_DE_ATLAS
+MONGODB_URI=mongodb+srv://USUARIO:CONTRASEÑA@cluster0.xxxxx.mongodb.net/nombredb?retryWrites=true&w=majority
 JWT_SECRET=una_clave_segura
 PORT=5000
 CORS_ORIGIN=http://localhost:3000
 ```
 
-Referencia: `server/env.example`
+Sin `MONGODB_URI` el servidor no arranca; cuando tengas el URI de Atlas, solo actualiza esa variable.
 
 ## Correr backend (Express)
 

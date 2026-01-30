@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { apiFetch, API_BASE_URL, login as apiLogin, logout as apiLogout } from "@/lib/api";
+import { apiFetch, login as apiLogin, logout as apiLogout, downloadWithAuth } from "@/lib/api";
 
 const TABS = [
   { key: "tasks", label: "Tareas" },
@@ -16,7 +16,7 @@ const TABS = [
 function Field({ label, children }) {
   return (
     <label className="grid gap-1">
-      <span className="text-sm font-medium text-zinc-700">{label}</span>
+      <span className="text-sm font-medium text-zinc-900">{label}</span>
       {children}
     </label>
   );
@@ -30,7 +30,7 @@ function Button({ variant = "primary", className = "", ...props }) {
       ? "bg-zinc-900 text-white hover:bg-zinc-800"
       : variant === "danger"
         ? "bg-red-600 text-white hover:bg-red-500"
-        : "bg-white text-zinc-900 border border-zinc-200 hover:bg-zinc-50";
+        : "bg-zinc-100 text-zinc-900 border border-zinc-300 hover:bg-zinc-200";
   return <button className={`${base} ${styles} ${className}`} {...props} />;
 }
 
@@ -211,6 +211,29 @@ export default function Home() {
     }
   }
 
+  function clearTaskForm() {
+    setSelectedTaskId(null);
+    setTaskForm({
+      title: "",
+      description: "",
+      status: "Pendiente",
+      priority: "Media",
+      projectId: "0",
+      assignedToId: "0",
+      dueDate: "",
+      estimatedHours: "",
+    });
+  }
+
+  async function exportCSV() {
+    setError("");
+    try {
+      await downloadWithAuth("/api/export/tasks.csv", "export_tasks.csv");
+    } catch (e) {
+      setError(e.message);
+    }
+  }
+
   async function addProject() {
     const name = prompt("Nombre del proyecto:");
     if (!name) return;
@@ -379,7 +402,6 @@ export default function Home() {
           <div className="w-full rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
             <div className="mb-4">
               <h1 className="text-xl font-semibold text-zinc-900">Task Manager (Next + Express)</h1>
-              <p className="text-sm text-zinc-600">API: {API_BASE_URL}</p>
             </div>
             {error ? (
               <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
@@ -391,7 +413,7 @@ export default function Home() {
                 <input
                   name="username"
                   defaultValue="admin"
-                  className="h-10 rounded-md border border-zinc-200 px-3 outline-none focus:ring-2 focus:ring-zinc-900/20"
+                  className="h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900/20"
                 />
               </Field>
               <Field label="Contraseña">
@@ -399,14 +421,11 @@ export default function Home() {
                   name="password"
                   type="password"
                   defaultValue="admin"
-                  className="h-10 rounded-md border border-zinc-200 px-3 outline-none focus:ring-2 focus:ring-zinc-900/20"
+                  className="h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900/20"
                 />
               </Field>
               <Button type="submit">Entrar</Button>
             </form>
-            <p className="mt-4 text-xs text-zinc-500">
-              Nota: crea tu conexión Mongo Atlas en el backend (`server/`) y ejecuta ambos.
-            </p>
           </div>
         </div>
       </div>
@@ -419,8 +438,8 @@ export default function Home() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-zinc-900">Task Manager</h1>
-            <p className="text-sm text-zinc-600">
-              Usuario: <span className="font-medium text-zinc-900">{user.username}</span>
+            <p className="text-sm text-zinc-900">
+              Usuario: <span className="font-medium">{user.username}</span>
             </p>
           </div>
           <div className="flex gap-2">
@@ -462,7 +481,7 @@ export default function Home() {
                   <input
                     value={taskForm.title}
                     onChange={(e) => setTaskForm((s) => ({ ...s, title: e.target.value }))}
-                    className="h-10 rounded-md border border-zinc-200 px-3 outline-none focus:ring-2 focus:ring-zinc-900/20"
+                    className="h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-900 placeholder:text-zinc-600 outline-none focus:ring-2 focus:ring-zinc-900/20"
                   />
                 </Field>
                 <Field label="Descripción">
@@ -470,7 +489,7 @@ export default function Home() {
                     value={taskForm.description}
                     onChange={(e) => setTaskForm((s) => ({ ...s, description: e.target.value }))}
                     rows={3}
-                    className="rounded-md border border-zinc-200 px-3 py-2 outline-none focus:ring-2 focus:ring-zinc-900/20"
+                    className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-zinc-900 placeholder:text-zinc-600 outline-none focus:ring-2 focus:ring-zinc-900/20"
                   />
                 </Field>
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -478,7 +497,7 @@ export default function Home() {
                     <select
                       value={taskForm.status}
                       onChange={(e) => setTaskForm((s) => ({ ...s, status: e.target.value }))}
-                      className="h-10 rounded-md border border-zinc-200 px-3 outline-none focus:ring-2 focus:ring-zinc-900/20"
+                      className="h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900/20"
                     >
                       {["Pendiente", "En Progreso", "Completada", "Bloqueada", "Cancelada"].map((x) => (
                         <option key={x}>{x}</option>
@@ -489,7 +508,7 @@ export default function Home() {
                     <select
                       value={taskForm.priority}
                       onChange={(e) => setTaskForm((s) => ({ ...s, priority: e.target.value }))}
-                      className="h-10 rounded-md border border-zinc-200 px-3 outline-none focus:ring-2 focus:ring-zinc-900/20"
+                      className="h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900/20"
                     >
                       {["Baja", "Media", "Alta", "Crítica"].map((x) => (
                         <option key={x}>{x}</option>
@@ -502,7 +521,7 @@ export default function Home() {
                     <select
                       value={taskForm.projectId}
                       onChange={(e) => setTaskForm((s) => ({ ...s, projectId: e.target.value }))}
-                      className="h-10 rounded-md border border-zinc-200 px-3 outline-none focus:ring-2 focus:ring-zinc-900/20"
+                      className="h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900/20"
                     >
                       <option value="0">Sin proyecto</option>
                       {projects.map((p) => (
@@ -516,7 +535,7 @@ export default function Home() {
                     <select
                       value={taskForm.assignedToId}
                       onChange={(e) => setTaskForm((s) => ({ ...s, assignedToId: e.target.value }))}
-                      className="h-10 rounded-md border border-zinc-200 px-3 outline-none focus:ring-2 focus:ring-zinc-900/20"
+                      className="h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900/20"
                     >
                       <option value="0">Sin asignar</option>
                       {users.map((u) => (
@@ -527,12 +546,13 @@ export default function Home() {
                     </select>
                   </Field>
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-3">
                   <Field label="Fecha vencimiento (YYYY-MM-DD)">
                     <input
                       value={taskForm.dueDate}
                       onChange={(e) => setTaskForm((s) => ({ ...s, dueDate: e.target.value }))}
-                      className="h-10 rounded-md border border-zinc-200 px-3 outline-none focus:ring-2 focus:ring-zinc-900/20"
+                      placeholder="YYYY-MM-DD"
+                      className="h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-900 placeholder:text-zinc-600 outline-none focus:ring-2 focus:ring-zinc-900/20"
                     />
                   </Field>
                   <Field label="Horas estimadas">
@@ -541,7 +561,7 @@ export default function Home() {
                       step="0.5"
                       value={taskForm.estimatedHours}
                       onChange={(e) => setTaskForm((s) => ({ ...s, estimatedHours: e.target.value }))}
-                      className="h-10 rounded-md border border-zinc-200 px-3 outline-none focus:ring-2 focus:ring-zinc-900/20"
+                      className="h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900/20"
                     />
                   </Field>
                 </div>
@@ -553,8 +573,11 @@ export default function Home() {
                   <Button variant="danger" onClick={deleteTask} disabled={!selectedTaskId}>
                     Eliminar
                   </Button>
+                  <Button variant="secondary" onClick={clearTaskForm}>
+                    Limpiar
+                  </Button>
                 </div>
-                <div className="mt-3 rounded-md bg-zinc-50 p-3 text-sm text-zinc-700">
+                <div className="mt-3 rounded-md bg-zinc-100 border border-zinc-200 p-3 text-sm text-zinc-900">
                   <strong>Estadísticas:</strong>{" "}
                   {`Total: ${stats.total} | Completadas: ${stats.completed} | Pendientes: ${stats.pending} | Alta Prioridad: ${stats.highPriority} | Vencidas: ${stats.overdue}`}
                 </div>
@@ -564,8 +587,8 @@ export default function Home() {
             <div className="rounded-xl border border-zinc-200 bg-white p-4 lg:col-span-3">
               <h2 className="text-lg font-semibold text-zinc-900">Lista de Tareas</h2>
               <div className="mt-3 overflow-auto">
-                <table className="min-w-full text-sm">
-                  <thead className="text-left text-zinc-600">
+                <table className="min-w-full text-sm text-zinc-900">
+                  <thead className="text-left text-zinc-900">
                     <tr className="[&>th]:px-3 [&>th]:py-2 border-b border-zinc-200">
                       <th>ID</th>
                       <th>Título</th>
@@ -581,12 +604,12 @@ export default function Home() {
                       <tr
                         key={t.id}
                         onClick={() => setSelectedTaskId(t.id)}
-                        className={`cursor-pointer border-b border-zinc-100 [&>td]:px-3 [&>td]:py-2 hover:bg-zinc-50 ${
+                        className={`cursor-pointer border-b border-zinc-100 [&>td]:px-3 [&>td]:py-2 [&>td]:text-zinc-900 hover:bg-zinc-50 ${
                           selectedTaskId === t.id ? "bg-zinc-100" : ""
                         }`}
                       >
                         <td className="font-mono">{t.taskNo}</td>
-                        <td className="font-medium text-zinc-900">{t.title}</td>
+                        <td className="font-medium">{t.title}</td>
                         <td>{t.status}</td>
                         <td>{t.priority}</td>
                         <td>{t.project ? t.project.name : "Sin proyecto"}</td>
@@ -615,8 +638,8 @@ export default function Home() {
               <Button onClick={addProject}>Agregar</Button>
             </div>
             <div className="mt-3 overflow-auto">
-              <table className="min-w-full text-sm">
-                <thead className="text-left text-zinc-600">
+              <table className="min-w-full text-sm text-zinc-900">
+                <thead className="text-left text-zinc-900">
                   <tr className="[&>th]:px-3 [&>th]:py-2 border-b border-zinc-200">
                     <th>ID</th>
                     <th>Nombre</th>
@@ -626,10 +649,10 @@ export default function Home() {
                 </thead>
                 <tbody>
                   {projects.map((p) => (
-                    <tr key={p.id} className="border-b border-zinc-100 [&>td]:px-3 [&>td]:py-2">
+                    <tr key={p.id} className="border-b border-zinc-100 [&>td]:px-3 [&>td]:py-2 [&>td]:text-zinc-900">
                       <td className="font-mono">{p.projectNo}</td>
                       <td className="font-medium text-zinc-900">{p.name}</td>
-                      <td className="text-zinc-700">{p.description || ""}</td>
+                      <td className="text-zinc-900">{p.description || ""}</td>
                       <td className="text-right">
                         <Button variant="danger" onClick={() => deleteProject(p.id)}>
                           Eliminar
@@ -659,7 +682,7 @@ export default function Home() {
                   <input
                     value={commentTaskId}
                     onChange={(e) => setCommentTaskId(e.target.value)}
-                    className="h-10 rounded-md border border-zinc-200 px-3 outline-none focus:ring-2 focus:ring-zinc-900/20"
+                    className="h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900/20"
                   />
                 </Field>
                 <Field label="Comentario">
@@ -667,7 +690,7 @@ export default function Home() {
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
                     rows={3}
-                    className="rounded-md border border-zinc-200 px-3 py-2 outline-none focus:ring-2 focus:ring-zinc-900/20"
+                    className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-zinc-900 placeholder:text-zinc-600 outline-none focus:ring-2 focus:ring-zinc-900/20"
                   />
                 </Field>
                 <div className="flex gap-2">
@@ -704,7 +727,7 @@ export default function Home() {
                   <input
                     value={historyTaskId}
                     onChange={(e) => setHistoryTaskId(e.target.value)}
-                    className="h-10 rounded-md border border-zinc-200 px-3 outline-none focus:ring-2 focus:ring-zinc-900/20"
+                    className="h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900/20"
                   />
                 </Field>
                 <div className="flex gap-2">
@@ -728,7 +751,7 @@ export default function Home() {
                       {h.user ? h.user.username : "Desconocido"}
                       {h.task ? ` — Tarea #${h.task.taskNo}` : ""}
                     </div>
-                    <div className="mt-1 text-zinc-700">
+                    <div className="mt-1 text-zinc-900">
                       <div>
                         <span className="font-medium">Antes:</span> {h.oldValue || "(vacío)"}
                       </div>
@@ -781,14 +804,14 @@ export default function Home() {
                 <input
                   value={search.text}
                   onChange={(e) => setSearch((s) => ({ ...s, text: e.target.value }))}
-                  className="h-10 rounded-md border border-zinc-200 px-3 outline-none focus:ring-2 focus:ring-zinc-900/20"
+                  className="h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900/20"
                 />
               </Field>
               <Field label="Estado">
                 <select
                   value={search.status}
                   onChange={(e) => setSearch((s) => ({ ...s, status: e.target.value }))}
-                  className="h-10 rounded-md border border-zinc-200 px-3 outline-none focus:ring-2 focus:ring-zinc-900/20"
+                  className="h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900/20"
                 >
                   <option value="">Todos</option>
                   {["Pendiente", "En Progreso", "Completada"].map((x) => (
@@ -800,7 +823,7 @@ export default function Home() {
                 <select
                   value={search.priority}
                   onChange={(e) => setSearch((s) => ({ ...s, priority: e.target.value }))}
-                  className="h-10 rounded-md border border-zinc-200 px-3 outline-none focus:ring-2 focus:ring-zinc-900/20"
+                  className="h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900/20"
                 >
                   <option value="">Todas</option>
                   {["Baja", "Media", "Alta", "Crítica"].map((x) => (
@@ -812,7 +835,7 @@ export default function Home() {
                 <select
                   value={search.projectId}
                   onChange={(e) => setSearch((s) => ({ ...s, projectId: e.target.value }))}
-                  className="h-10 rounded-md border border-zinc-200 px-3 outline-none focus:ring-2 focus:ring-zinc-900/20"
+                  className="h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900/20"
                 >
                   <option value="0">Todos</option>
                   {projects.map((p) => (
@@ -827,8 +850,8 @@ export default function Home() {
               <Button onClick={runSearch}>Buscar</Button>
             </div>
             <div className="mt-4 overflow-auto">
-              <table className="min-w-full text-sm">
-                <thead className="text-left text-zinc-600">
+              <table className="min-w-full text-sm text-zinc-900">
+                <thead className="text-left text-zinc-900">
                   <tr className="[&>th]:px-3 [&>th]:py-2 border-b border-zinc-200">
                     <th>ID</th>
                     <th>Título</th>
@@ -839,9 +862,9 @@ export default function Home() {
                 </thead>
                 <tbody>
                   {searchResults.map((t) => (
-                    <tr key={t.id} className="border-b border-zinc-100 [&>td]:px-3 [&>td]:py-2">
+                    <tr key={t.id} className="border-b border-zinc-100 [&>td]:px-3 [&>td]:py-2 [&>td]:text-zinc-900">
                       <td className="font-mono">{t.taskNo}</td>
-                      <td className="font-medium text-zinc-900">{t.title}</td>
+                      <td className="font-medium">{t.title}</td>
                       <td>{t.status}</td>
                       <td>{t.priority}</td>
                       <td>{t.project ? t.project.name : "Sin proyecto"}</td>
@@ -872,14 +895,9 @@ export default function Home() {
                 <Button variant="secondary" onClick={() => generateReport("users")}>
                   Reporte de Usuarios
                 </Button>
-                <a
-                  className="inline-flex items-center justify-center rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm font-medium hover:bg-zinc-50"
-                  href={`${API_BASE_URL}/api/export/tasks.csv`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Exportar CSV
-                </a>
+                <Button variant="secondary" onClick={exportCSV}>
+                  Exportar a CSV
+                </Button>
               </div>
             </div>
             <div className="rounded-xl border border-zinc-200 bg-white p-4">
@@ -888,7 +906,7 @@ export default function Home() {
                 value={reportText}
                 readOnly
                 rows={14}
-                className="mt-3 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 font-mono text-sm text-zinc-900"
+                className="mt-3 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 font-mono text-sm text-zinc-900"
               />
             </div>
           </div>

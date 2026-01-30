@@ -53,3 +53,23 @@ export function logout() {
   setToken(null);
 }
 
+/** Descarga un archivo (ej. CSV) con el token de autenticación */
+export async function downloadWithAuth(path, filename) {
+  const token = getToken();
+  const headers = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const res = await fetch(`${API_BASE_URL}${path}`, { headers });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `HTTP ${res.status}`);
+  }
+  const blob = await res.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename || "download";
+  a.click();
+  window.URL.revokeObjectURL(url);
+}
+
