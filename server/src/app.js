@@ -24,6 +24,25 @@ function createApp() {
   app.use(express.json({ limit: '1mb' }));
   app.use(morgan('dev'));
 
+  app.get('/', (_req, res) => {
+    res.type('html').send(`
+      <!DOCTYPE html>
+      <html lang="es">
+      <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Task Manager API</title></head>
+      <body style="font-family: system-ui; max-width: 600px; margin: 2rem auto; padding: 1rem;">
+        <h1>Task Manager API</h1>
+        <p>Backend en ejecución. Este es el servidor de la API; la app con interfaz está en el frontend.</p>
+        <p><strong>Endpoints:</strong></p>
+        <ul>
+          <li><a href="/api/health">GET /api/health</a> — estado del servicio</li>
+          <li>POST /api/auth/login — login</li>
+          <li>/api/tasks, /api/projects, etc. (requieren autenticación)</li>
+        </ul>
+      </body>
+      </html>
+    `);
+  });
+
   app.get('/api/health', (_req, res) => {
     res.json({ ok: true, service: 'legacyapp-api' });
   });
