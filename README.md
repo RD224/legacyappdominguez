@@ -1,73 +1,57 @@
 # Task Manager - React + Node.js/Express + MongoDB Atlas
 
-App de gestión de tareas migrada desde la versión estática (legacy) a una arquitectura full-stack:
+Task management app migrated from a static (legacy) version to a full-stack architecture:
 
-| Capa        | Tecnología              | Ubicación   |
-|------------|--------------------------|-------------|
-| **Frontend** | React (Next.js)         | `client/`   |
-| **Backend**  | Node.js + Express.js   | `server/`   |
-| **Base de datos** | MongoDB Atlas      | URI en `.env` |
+| Layer         | Technology              | Location    |
+|---------------|--------------------------|-------------|
+| **Frontend**  | React (Next.js)          | `client/`   |
+| **Backend**   | Node.js + Express.js     | `server/`   |
+| **Database**  | MongoDB Atlas            | URI in `.env` |
 
-- **Legacy** (referencia): `index.html` + `style.css` + `app.js` (sin servidor, usa `localStorage`)
-- **Nueva app**: React en `client/` + Express en `server/` + MongoDB Atlas
+- **Legacy** (reference): `index.html` + `style.css` + `app.js` (no server, uses `localStorage`)
+- **New app**: React in `client/` + Express in `server/` + MongoDB Atlas
 
-## Qué se migró
-
-- **Login** (JWT)
-- **CRUD de Tareas**
-- **CRUD de Proyectos**
-- **Comentarios** por tarea
-- **Historial / auditoría**
-- **Notificaciones** (pendientes y “marcar leídas”)
-- **Búsqueda** (filtros)
-- **Reportes**
-- **Export CSV**
-
-> Nota: La UI nueva usa el mismo “ID numérico” visible (por compatibilidad con el legacy), pero en Mongo se guarda también el `_id` real.
-
-## Estructura del proyecto
+## Project structure
 
 ```
 legacyappdominguez/
 ├── client/                 # Frontend React (Next.js)
-│   ├── src/app/             # Páginas y layout
-│   └── src/lib/api.js       # Cliente API (login, fetch, export)
+│   ├── src/app/            # Pages and layout
+│   └── src/lib/api.js      # API client (login, fetch, export)
 ├── server/                  # Backend Node.js + Express
 │   ├── src/
-│   │   ├── index.js        # Entrada, conexión DB y arranque
-│   │   ├── app.js          # Express, CORS, rutas
-│   │   ├── db.js           # Conexión MongoDB (MONGODB_URI)
-│   │   ├── seed.js         # Datos iniciales (usuarios, proyectos)
+│   │   ├── index.js        # Entry point, DB connection and startup
+│   │   ├── app.js          # Express, CORS, routes
+│   │   ├── db.js           # MongoDB connection (MONGODB_URI)
+│   │   ├── seed.js         # Initial data (users, projects)
 │   │   ├── models/         # Mongoose: User, Task, Project, Comment, History, Notification
 │   │   ├── routes/         # API: auth, users, projects, tasks, history, notifications, reports, export
 │   │   └── middleware/     # authRequired (JWT)
-│   └── .env                # MONGODB_URI, JWT_SECRET, PORT, CORS_ORIGIN (crear desde env.example)
-├── index.html, app.js, style.css   # App legacy (referencia)
+│   └── .env                # MONGODB_URI, JWT_SECRET, PORT, CORS_ORIGIN (create from env.example)
+├── index.html, app.js, style.css   # Legacy app (reference)
 └── README.md
 ```
 
-Cuando tengas el **URI de MongoDB Atlas**, créalo en [Atlas](https://cloud.mongodb.com), copia el connection string y pégalo en `server/.env` como `MONGODB_URI=...`.
-
-## Requisitos
+## Requirements
 
 - Node.js 18+
-- Una base en MongoDB Atlas (connection string)
+- A MongoDB Atlas database (connection string)
 
-## Configurar MongoDB Atlas (backend)
+## Configure MongoDB Atlas (backend)
 
-1. Copia `server/env.example` a `server/.env`.
-2. En `server/.env` pega tu **Connection String** de MongoDB Atlas en `MONGODB_URI`:
+1. Copy `server/env.example` to `server/.env`.
+2. In `server/.env`, paste your MongoDB Atlas **Connection String** in `MONGODB_URI`:
 
 ```env
-MONGODB_URI=mongodb+srv://USUARIO:CONTRASEÑA@cluster0.xxxxx.mongodb.net/nombredb?retryWrites=true&w=majority
-JWT_SECRET=una_clave_segura
+MONGODB_URI=mongodb+srv://USER:PASSWORD@cluster0.xxxxx.mongodb.net/dbname?retryWrites=true&w=majority
+JWT_SECRET=a_secure_secret
 PORT=5000
 CORS_ORIGIN=http://localhost:3000
 ```
 
-Sin `MONGODB_URI` el servidor no arranca; cuando tengas el URI de Atlas, solo actualiza esa variable.
+Without `MONGODB_URI` the server will not start; once you have the Atlas URI, just update that variable.
 
-## Correr backend (Express)
+## Run backend (Express)
 
 ```bash
 cd server
@@ -77,17 +61,17 @@ npm run dev
 
 API health check: `GET /api/health`
 
-## Configurar frontend (Next.js)
+## Configure frontend (Next.js)
 
-Opcional: crea `client/.env.local` (manual) si tu API no está en `http://localhost:5000`:
+Optional: create `client/.env.local` manually if your API is not at `http://localhost:5000`:
 
 ```env
 NEXT_PUBLIC_API_BASE_URL=http://localhost:5000
 ```
 
-Referencia: `client/env.example`
+Reference: `client/env.example`
 
-## Correr frontend (Next.js)
+## Run frontend (Next.js)
 
 ```bash
 cd client
@@ -95,21 +79,9 @@ npm install
 npm run dev
 ```
 
-Abre `http://localhost:3000`
+Open `http://localhost:3000`
 
-## Desplegar frontend en Vercel
+## Default credentials
 
-El proyecto ya incluye `client/vercel.json` con la URL del backend en Render.
-
-1. Entra a [vercel.com](https://vercel.com) e inicia sesión con GitHub.
-2. **Add New** → **Project** → importa el repo **legacyappdominguez**.
-3. En **Root Directory** haz clic en **Edit** y pon: **`client`**.
-4. La variable `NEXT_PUBLIC_API_BASE_URL` está en `client/vercel.json`; si tu API está en otra URL, añádela en **Environment Variables**.
-5. **Deploy**. Vercel te dará una URL (ej. `https://legacyappdominguez.vercel.app`).
-6. En **Render** (backend): Environment → añade **CORS_ORIGIN** = la URL de Vercel (ej. `https://legacyappdominguez.vercel.app`) → Manual Deploy.
-
-## Credenciales por defecto
-
-- Usuario: `admin`
-- Contraseña: `admin`
-
+- Username: `admin`
+- Password: `admin`

@@ -546,8 +546,8 @@ export default function Home() {
       <div className="min-h-screen bg-zinc-50">
         <div className="mx-auto flex min-h-screen max-w-lg items-center px-6">
           <div className="w-full rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
-            <div className="mb-4">
-              <h1 className="text-xl font-semibold text-zinc-900">Task Manager (Next + Express)</h1>
+            <div className="mb-4 text-center">
+              <h1 className="text-xl font-semibold text-zinc-900">Task Manager</h1>
             </div>
             {error ? (
               <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
@@ -582,7 +582,7 @@ export default function Home() {
     <div className="min-h-screen bg-zinc-50">
       <div className="mx-auto max-w-6xl px-6 py-8">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
+          <div className="text-center sm:text-left">
             <h1 className="text-2xl font-semibold text-zinc-900">Task Manager</h1>
             <p className="text-sm text-zinc-900">
               Usuario: <span className="font-medium">{user.username}</span>
@@ -750,12 +750,12 @@ export default function Home() {
               </Field>
             </div>
             <div className="grid gap-3">
-              <Field label="Fecha vencimiento (YYYY-MM-DD)">
+              <Field label="Fecha vencimiento">
                 <input
+                  type="date"
                   value={taskForm.dueDate}
                   onChange={(e) => setTaskForm((s) => ({ ...s, dueDate: e.target.value }))}
-                  placeholder="YYYY-MM-DD"
-                  className="h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-900 placeholder:text-zinc-600 outline-none focus:ring-2 focus:ring-zinc-900/20"
+                  className="h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900/20"
                 />
               </Field>
               <Field label="Horas estimadas">
