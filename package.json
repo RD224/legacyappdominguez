@@ -1,0 +1,9 @@
+{
+  "name": "legacyappdominguez",
+  "private": true,
+  "description": "Raíz del repo: build y start delegan en server/ para Render",
+  "scripts": {
+    "install": "cd server && npm install",
+    "start": "cd server && npm start"
+  }
+}
