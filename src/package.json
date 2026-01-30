@@ -1,0 +1,9 @@
+{
+  "name": "legacyapp-deploy",
+  "private": true,
+  "description": "Punto de entrada para Render: instala y arranca el backend en server/",
+  "scripts": {
+    "install": "cd ../server && npm install",
+    "start": "cd ../server && npm start"
+  }
+}
