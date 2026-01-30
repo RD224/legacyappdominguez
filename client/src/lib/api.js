@@ -1,5 +1,10 @@
+const DEFAULT_API =
+  typeof window !== "undefined" && !window.location.hostname.includes("localhost")
+    ? "https://manageappdominguez.onrender.com"
+    : "http://localhost:5000";
+
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
+  process.env.NEXT_PUBLIC_API_BASE_URL || DEFAULT_API;
 
 function getToken() {
   if (typeof window === "undefined") return null;
