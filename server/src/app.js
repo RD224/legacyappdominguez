@@ -1,3 +1,5 @@
+const path = require('path');
+const fs = require('fs');
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
@@ -11,6 +13,9 @@ const historyRoutes = require('./routes/history');
 const notificationsRoutes = require('./routes/notifications');
 const reportsRoutes = require('./routes/reports');
 const exportRoutes = require('./routes/export');
+
+const clientOutPath = path.join(__dirname, '../../client/out');
+const hasStaticFrontend = fs.existsSync(clientOutPath);
 
 function createApp() {
   const app = express();
@@ -28,8 +33,9 @@ function createApp() {
   app.use(express.json({ limit: '1mb' }));
   app.use(morgan('dev'));
 
-  app.get('/', (_req, res) => {
-    res.type('html').send(`
+  if (!hasStaticFrontend) {
+    app.get('/', (_req, res) => {
+      res.type('html').send(`
       <!DOCTYPE html>
       <html lang="es">
       <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Task Manager API</title></head>
@@ -45,7 +51,8 @@ function createApp() {
       </body>
       </html>
     `);
-  });
+    });
+  }
 
   app.get('/api/health', (_req, res) => {
     res.json({ ok: true, service: 'legacyapp-api' });
@@ -61,6 +68,14 @@ function createApp() {
   app.use('/api/notifications', authRequired, notificationsRoutes);
   app.use('/api/reports', authRequired, reportsRoutes);
   app.use('/api/export', authRequired, exportRoutes);
+
+  if (hasStaticFrontend) {
+    app.use(express.static(clientOutPath));
+    app.get('*', (req, res, next) => {
+      if (req.path.startsWith('/api')) return next();
+      res.sendFile(path.join(clientOutPath, 'index.html'));
+    });
+  }
 
   // eslint-disable-next-line no-unused-vars
   app.use((err, _req, res, _next) => {
