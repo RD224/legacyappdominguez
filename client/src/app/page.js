@@ -91,6 +91,31 @@ function ConfirmModal({ open, onClose, title, message, confirmLabel = "Confirmar
   );
 }
 
+function NotificationModal({ open, onClose, message }) {
+  if (!open) return null;
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+      role="alert"
+      aria-modal="true"
+      aria-live="polite"
+    >
+      <div className="absolute inset-0 bg-zinc-900/50 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
+      <div className="relative w-full max-w-sm rounded-2xl bg-white shadow-2xl ring-1 ring-emerald-200 p-6 text-center">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100">
+          <svg className="h-6 w-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <p className="mt-4 text-zinc-900 font-medium">{message}</p>
+        <div className="mt-6">
+          <Button onClick={onClose}>Aceptar</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const [user, setUser] = useState(null);
   const [tab, setTab] = useState("tasks");
@@ -150,6 +175,7 @@ export default function Home() {
   const [projectForm, setProjectForm] = useState({ name: "", description: "" });
   const [editingProjectId, setEditingProjectId] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState({ type: null, id: null, name: "" });
+  const [notification, setNotification] = useState({ show: false, message: "" });
 
   async function refreshLookups() {
     const [u, p] = await Promise.all([apiFetch("/api/users"), apiFetch("/api/projects")]);
@@ -235,6 +261,7 @@ export default function Home() {
         estimatedHours: "",
       });
       setTaskModalOpen(false);
+      setNotification({ show: true, message: "Tarea agregada correctamente" });
     } catch (e) {
       setError(e.message);
     }
@@ -259,6 +286,7 @@ export default function Home() {
       });
       await refreshTasks();
       setTaskModalOpen(false);
+      setNotification({ show: true, message: "Tarea actualizada correctamente" });
     } catch (e) {
       setError(e.message);
     }
@@ -332,6 +360,10 @@ export default function Home() {
       }
       await refreshLookups();
       setProjectModalOpen(false);
+      setNotification({
+        show: true,
+        message: editingProjectId ? "Proyecto actualizado correctamente" : "Proyecto creado correctamente",
+      });
     } catch (e) {
       setError(e.message);
     }
@@ -352,6 +384,7 @@ export default function Home() {
       try {
         await apiFetch(`/api/projects/${confirmDelete.id}`, { method: "DELETE" });
         await refreshLookups();
+        setNotification({ show: true, message: "Proyecto eliminado correctamente" });
       } catch (e) {
         setError(e.message);
       }
@@ -363,6 +396,7 @@ export default function Home() {
         setSelectedTaskId(null);
         await refreshTasks();
         setTaskModalOpen(false);
+        setNotification({ show: true, message: "Tarea eliminada correctamente" });
       } catch (e) {
         setError(e.message);
       }
@@ -795,6 +829,12 @@ export default function Home() {
           confirmLabel="Eliminar"
           variant="danger"
           onConfirm={confirmDeleteAction}
+        />
+
+        <NotificationModal
+          open={notification.show}
+          onClose={() => setNotification({ show: false, message: "" })}
+          message={notification.message}
         />
 
         {tab === "projects" ? (
