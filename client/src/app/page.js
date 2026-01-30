@@ -34,6 +34,63 @@ function Button({ variant = "primary", className = "", ...props }) {
   return <button className={`${base} ${styles} ${className}`} {...props} />;
 }
 
+function Modal({ open, onClose, title, children }) {
+  if (!open) return null;
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+    >
+      <div
+        className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <div className="relative w-full max-w-lg rounded-2xl bg-white shadow-2xl ring-1 ring-zinc-200 max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4">
+          <h2 id="modal-title" className="text-xl font-semibold text-zinc-900">
+            {title}
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 transition-colors"
+            aria-label="Cerrar"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="overflow-y-auto px-6 py-4">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function ConfirmModal({ open, onClose, title, message, confirmLabel = "Confirmar", onConfirm, variant = "danger" }) {
+  if (!open) return null;
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      role="alertdialog"
+      aria-modal="true"
+    >
+      <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
+      <div className="relative w-full max-w-sm rounded-2xl bg-white shadow-2xl ring-1 ring-zinc-200 p-6">
+        <h3 className="text-lg font-semibold text-zinc-900">{title}</h3>
+        <p className="mt-2 text-zinc-600">{message}</p>
+        <div className="mt-6 flex gap-3 justify-end">
+          <Button variant="secondary" onClick={onClose}>Cancelar</Button>
+          <Button variant={variant} onClick={() => { onConfirm(); onClose(); }}>{confirmLabel}</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const [user, setUser] = useState(null);
   const [tab, setTab] = useState("tasks");
@@ -86,6 +143,13 @@ export default function Home() {
 
   // Reports
   const [reportText, setReportText] = useState("");
+
+  // Modals
+  const [taskModalOpen, setTaskModalOpen] = useState(false);
+  const [projectModalOpen, setProjectModalOpen] = useState(false);
+  const [projectForm, setProjectForm] = useState({ name: "", description: "" });
+  const [editingProjectId, setEditingProjectId] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState({ type: null, id: null, name: "" });
 
   async function refreshLookups() {
     const [u, p] = await Promise.all([apiFetch("/api/users"), apiFetch("/api/projects")]);
@@ -170,6 +234,7 @@ export default function Home() {
         dueDate: "",
         estimatedHours: "",
       });
+      setTaskModalOpen(false);
     } catch (e) {
       setError(e.message);
     }
@@ -193,22 +258,16 @@ export default function Home() {
         },
       });
       await refreshTasks();
+      setTaskModalOpen(false);
     } catch (e) {
       setError(e.message);
     }
   }
 
-  async function deleteTask() {
+  function deleteTask() {
     if (!selectedTaskId) return setError("Selecciona una tarea");
-    if (!confirm("¿Eliminar la tarea seleccionada?")) return;
-    setError("");
-    try {
-      await apiFetch(`/api/tasks/${selectedTaskId}`, { method: "DELETE" });
-      setSelectedTaskId(null);
-      await refreshTasks();
-    } catch (e) {
-      setError(e.message);
-    }
+    const task = tasks.find((t) => t.id === selectedTaskId);
+    setConfirmDelete({ type: "task", id: selectedTaskId, name: task?.title || "esta tarea" });
   }
 
   function clearTaskForm() {
@@ -234,28 +293,81 @@ export default function Home() {
     }
   }
 
-  async function addProject() {
-    const name = prompt("Nombre del proyecto:");
-    if (!name) return;
-    const description = prompt("Descripción (opcional):") || "";
+  function openNewTaskModal() {
+    clearTaskForm();
+    setTaskModalOpen(true);
+  }
+
+  function openEditTaskModal(taskId) {
+    setSelectedTaskId(taskId);
+    setTaskModalOpen(true);
+  }
+
+  function openNewProjectModal() {
+    setProjectForm({ name: "", description: "" });
+    setEditingProjectId(null);
+    setProjectModalOpen(true);
+  }
+
+  function openEditProjectModal(project) {
+    setProjectForm({ name: project.name, description: project.description || "" });
+    setEditingProjectId(project.id);
+    setProjectModalOpen(true);
+  }
+
+  async function submitProjectModal() {
+    if (!projectForm.name.trim()) return setError("El nombre es requerido");
     setError("");
     try {
-      await apiFetch("/api/projects", { method: "POST", body: { name, description } });
+      if (editingProjectId) {
+        await apiFetch(`/api/projects/${editingProjectId}`, {
+          method: "PUT",
+          body: { name: projectForm.name.trim(), description: projectForm.description || "" },
+        });
+      } else {
+        await apiFetch("/api/projects", {
+          method: "POST",
+          body: { name: projectForm.name.trim(), description: projectForm.description || "" },
+        });
+      }
       await refreshLookups();
+      setProjectModalOpen(false);
     } catch (e) {
       setError(e.message);
     }
   }
 
+  async function addProject() {
+    openNewProjectModal();
+  }
+
   async function deleteProject(projectId) {
-    if (!confirm("¿Eliminar proyecto?")) return;
-    setError("");
-    try {
-      await apiFetch(`/api/projects/${projectId}`, { method: "DELETE" });
-      await refreshLookups();
-    } catch (e) {
-      setError(e.message);
+    const project = projects.find((p) => p.id === projectId);
+    setConfirmDelete({ type: "project", id: projectId, name: project?.name || "este proyecto" });
+  }
+
+  async function confirmDeleteAction() {
+    if (confirmDelete.type === "project" && confirmDelete.id) {
+      setError("");
+      try {
+        await apiFetch(`/api/projects/${confirmDelete.id}`, { method: "DELETE" });
+        await refreshLookups();
+      } catch (e) {
+        setError(e.message);
+      }
     }
+    if (confirmDelete.type === "task" && confirmDelete.id) {
+      setError("");
+      try {
+        await apiFetch(`/api/tasks/${confirmDelete.id}`, { method: "DELETE" });
+        setSelectedTaskId(null);
+        await refreshTasks();
+        setTaskModalOpen(false);
+      } catch (e) {
+        setError(e.message);
+      }
+    }
+    setConfirmDelete({ type: null, id: null, name: "" });
   }
 
   async function loadComments() {
@@ -473,118 +585,15 @@ export default function Home() {
         </div>
 
         {tab === "tasks" ? (
-          <div className="mt-6 grid gap-6 lg:grid-cols-5">
-            <div className="rounded-xl border border-zinc-200 bg-white p-4 lg:col-span-2">
-              <h2 className="text-lg font-semibold text-zinc-900">Nueva / Editar Tarea</h2>
-              <div className="mt-4 grid gap-3">
-                <Field label="Título">
-                  <input
-                    value={taskForm.title}
-                    onChange={(e) => setTaskForm((s) => ({ ...s, title: e.target.value }))}
-                    className="h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-900 placeholder:text-zinc-600 outline-none focus:ring-2 focus:ring-zinc-900/20"
-                  />
-                </Field>
-                <Field label="Descripción">
-                  <textarea
-                    value={taskForm.description}
-                    onChange={(e) => setTaskForm((s) => ({ ...s, description: e.target.value }))}
-                    rows={3}
-                    className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-zinc-900 placeholder:text-zinc-600 outline-none focus:ring-2 focus:ring-zinc-900/20"
-                  />
-                </Field>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Field label="Estado">
-                    <select
-                      value={taskForm.status}
-                      onChange={(e) => setTaskForm((s) => ({ ...s, status: e.target.value }))}
-                      className="h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900/20"
-                    >
-                      {["Pendiente", "En Progreso", "Completada", "Bloqueada", "Cancelada"].map((x) => (
-                        <option key={x}>{x}</option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field label="Prioridad">
-                    <select
-                      value={taskForm.priority}
-                      onChange={(e) => setTaskForm((s) => ({ ...s, priority: e.target.value }))}
-                      className="h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900/20"
-                    >
-                      {["Baja", "Media", "Alta", "Crítica"].map((x) => (
-                        <option key={x}>{x}</option>
-                      ))}
-                    </select>
-                  </Field>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Field label="Proyecto">
-                    <select
-                      value={taskForm.projectId}
-                      onChange={(e) => setTaskForm((s) => ({ ...s, projectId: e.target.value }))}
-                      className="h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900/20"
-                    >
-                      <option value="0">Sin proyecto</option>
-                      {projects.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field label="Asignado a">
-                    <select
-                      value={taskForm.assignedToId}
-                      onChange={(e) => setTaskForm((s) => ({ ...s, assignedToId: e.target.value }))}
-                      className="h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900/20"
-                    >
-                      <option value="0">Sin asignar</option>
-                      {users.map((u) => (
-                        <option key={u.id} value={u.id}>
-                          {u.username}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                </div>
-                <div className="grid gap-3">
-                  <Field label="Fecha vencimiento (YYYY-MM-DD)">
-                    <input
-                      value={taskForm.dueDate}
-                      onChange={(e) => setTaskForm((s) => ({ ...s, dueDate: e.target.value }))}
-                      placeholder="YYYY-MM-DD"
-                      className="h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-900 placeholder:text-zinc-600 outline-none focus:ring-2 focus:ring-zinc-900/20"
-                    />
-                  </Field>
-                  <Field label="Horas estimadas">
-                    <input
-                      type="number"
-                      step="0.5"
-                      value={taskForm.estimatedHours}
-                      onChange={(e) => setTaskForm((s) => ({ ...s, estimatedHours: e.target.value }))}
-                      className="h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900/20"
-                    />
-                  </Field>
-                </div>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <Button onClick={addTask}>Agregar</Button>
-                  <Button variant="secondary" onClick={updateTask} disabled={!selectedTaskId}>
-                    Actualizar
-                  </Button>
-                  <Button variant="danger" onClick={deleteTask} disabled={!selectedTaskId}>
-                    Eliminar
-                  </Button>
-                  <Button variant="secondary" onClick={clearTaskForm}>
-                    Limpiar
-                  </Button>
-                </div>
-                <div className="mt-3 rounded-md bg-zinc-100 border border-zinc-200 p-3 text-sm text-zinc-900">
-                  <strong>Estadísticas:</strong>{" "}
-                  {`Total: ${stats.total} | Completadas: ${stats.completed} | Pendientes: ${stats.pending} | Alta Prioridad: ${stats.highPriority} | Vencidas: ${stats.overdue}`}
-                </div>
+          <div className="mt-6">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+              <div className="rounded-md bg-zinc-100 border border-zinc-200 px-4 py-2 text-sm text-zinc-900">
+                <strong>Estadísticas:</strong>{" "}
+                {`Total: ${stats.total} | Completadas: ${stats.completed} | Pendientes: ${stats.pending} | Alta Prioridad: ${stats.highPriority} | Vencidas: ${stats.overdue}`}
               </div>
+              <Button onClick={openNewTaskModal}>Nueva Tarea</Button>
             </div>
-
-            <div className="rounded-xl border border-zinc-200 bg-white p-4 lg:col-span-3">
+            <div className="rounded-xl border border-zinc-200 bg-white p-4">
               <h2 className="text-lg font-semibold text-zinc-900">Lista de Tareas</h2>
               <div className="mt-3 overflow-auto">
                 <table className="min-w-full text-sm text-zinc-900">
@@ -603,7 +612,7 @@ export default function Home() {
                     {tasks.map((t) => (
                       <tr
                         key={t.id}
-                        onClick={() => setSelectedTaskId(t.id)}
+                        onClick={() => openEditTaskModal(t.id)}
                         className={`cursor-pointer border-b border-zinc-100 [&>td]:px-3 [&>td]:py-2 [&>td]:text-zinc-900 hover:bg-zinc-50 ${
                           selectedTaskId === t.id ? "bg-zinc-100" : ""
                         }`}
@@ -631,6 +640,163 @@ export default function Home() {
           </div>
         ) : null}
 
+        <Modal
+          open={taskModalOpen}
+          onClose={() => setTaskModalOpen(false)}
+          title={selectedTaskId ? "Editar Tarea" : "Nueva Tarea"}
+        >
+          <div className="grid gap-3">
+            <Field label="Título">
+              <input
+                value={taskForm.title}
+                onChange={(e) => setTaskForm((s) => ({ ...s, title: e.target.value }))}
+                className="h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-900 placeholder:text-zinc-600 outline-none focus:ring-2 focus:ring-zinc-900/20"
+              />
+            </Field>
+            <Field label="Descripción">
+              <textarea
+                value={taskForm.description}
+                onChange={(e) => setTaskForm((s) => ({ ...s, description: e.target.value }))}
+                rows={3}
+                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-zinc-900 placeholder:text-zinc-600 outline-none focus:ring-2 focus:ring-zinc-900/20"
+              />
+            </Field>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Estado">
+                <select
+                  value={taskForm.status}
+                  onChange={(e) => setTaskForm((s) => ({ ...s, status: e.target.value }))}
+                  className="h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900/20"
+                >
+                  {["Pendiente", "En Progreso", "Completada", "Bloqueada", "Cancelada"].map((x) => (
+                    <option key={x}>{x}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Prioridad">
+                <select
+                  value={taskForm.priority}
+                  onChange={(e) => setTaskForm((s) => ({ ...s, priority: e.target.value }))}
+                  className="h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900/20"
+                >
+                  {["Baja", "Media", "Alta", "Crítica"].map((x) => (
+                    <option key={x}>{x}</option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Proyecto">
+                <select
+                  value={taskForm.projectId}
+                  onChange={(e) => setTaskForm((s) => ({ ...s, projectId: e.target.value }))}
+                  className="h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900/20"
+                >
+                  <option value="0">Sin proyecto</option>
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Asignado a">
+                <select
+                  value={taskForm.assignedToId}
+                  onChange={(e) => setTaskForm((s) => ({ ...s, assignedToId: e.target.value }))}
+                  className="h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900/20"
+                >
+                  <option value="0">Sin asignar</option>
+                  {users.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.username}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+            <div className="grid gap-3">
+              <Field label="Fecha vencimiento (YYYY-MM-DD)">
+                <input
+                  value={taskForm.dueDate}
+                  onChange={(e) => setTaskForm((s) => ({ ...s, dueDate: e.target.value }))}
+                  placeholder="YYYY-MM-DD"
+                  className="h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-900 placeholder:text-zinc-600 outline-none focus:ring-2 focus:ring-zinc-900/20"
+                />
+              </Field>
+              <Field label="Horas estimadas">
+                <input
+                  type="number"
+                  step="0.5"
+                  value={taskForm.estimatedHours}
+                  onChange={(e) => setTaskForm((s) => ({ ...s, estimatedHours: e.target.value }))}
+                  className="h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900/20"
+                />
+              </Field>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2 border-t border-zinc-200 pt-4">
+              <Button onClick={addTask}>Agregar</Button>
+              <Button variant="secondary" onClick={updateTask} disabled={!selectedTaskId}>
+                Actualizar
+              </Button>
+              <Button variant="danger" onClick={deleteTask} disabled={!selectedTaskId}>
+                Eliminar
+              </Button>
+              <Button variant="secondary" onClick={() => { clearTaskForm(); setTaskModalOpen(false); }}>
+                Limpiar y cerrar
+              </Button>
+            </div>
+          </div>
+        </Modal>
+
+        <Modal
+          open={projectModalOpen}
+          onClose={() => setProjectModalOpen(false)}
+          title={editingProjectId ? "Editar Proyecto" : "Nuevo Proyecto"}
+        >
+          <div className="grid gap-3">
+            <Field label="Nombre">
+              <input
+                value={projectForm.name}
+                onChange={(e) => setProjectForm((s) => ({ ...s, name: e.target.value }))}
+                className="h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900/20"
+                placeholder="Nombre del proyecto"
+              />
+            </Field>
+            <Field label="Descripción">
+              <textarea
+                value={projectForm.description}
+                onChange={(e) => setProjectForm((s) => ({ ...s, description: e.target.value }))}
+                rows={3}
+                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-zinc-900 placeholder:text-zinc-600 outline-none focus:ring-2 focus:ring-zinc-900/20"
+                placeholder="Descripción (opcional)"
+              />
+            </Field>
+            <div className="mt-4 flex gap-2 border-t border-zinc-200 pt-4">
+              <Button onClick={submitProjectModal}>
+                {editingProjectId ? "Guardar cambios" : "Crear proyecto"}
+              </Button>
+              <Button variant="secondary" onClick={() => setProjectModalOpen(false)}>
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        </Modal>
+
+        <ConfirmModal
+          open={confirmDelete.type !== null}
+          onClose={() => setConfirmDelete({ type: null, id: null, name: "" })}
+          title={confirmDelete.type === "task" ? "Eliminar tarea" : "Eliminar proyecto"}
+          message={
+            confirmDelete.type === "task"
+              ? `¿Eliminar la tarea "${confirmDelete.name}"?`
+              : `¿Eliminar el proyecto "${confirmDelete.name}"? Esta acción no se puede deshacer.`
+          }
+          confirmLabel="Eliminar"
+          variant="danger"
+          onConfirm={confirmDeleteAction}
+        />
+
         {tab === "projects" ? (
           <div className="mt-6 rounded-xl border border-zinc-200 bg-white p-4">
             <div className="flex items-center justify-between">
@@ -654,7 +820,14 @@ export default function Home() {
                       <td className="font-medium text-zinc-900">{p.name}</td>
                       <td className="text-zinc-900">{p.description || ""}</td>
                       <td className="text-right">
-                        <Button variant="danger" onClick={() => deleteProject(p.id)}>
+                        <Button
+                          variant="secondary"
+                          className="mr-2"
+                          onClick={(e) => { e.stopPropagation(); openEditProjectModal(p); }}
+                        >
+                          Editar
+                        </Button>
+                        <Button variant="danger" onClick={(e) => { e.stopPropagation(); deleteProject(p.id); }}>
                           Eliminar
                         </Button>
                       </td>
